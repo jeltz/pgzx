@@ -2,7 +2,7 @@
   description = "Description for the project";
 
   inputs = {
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2405.635732.tar.gz";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
 
     parts.url = "github:hercules-ci/flake-parts";
 
@@ -11,9 +11,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     zls = {
-      url = "github:zigtools/zls";
+      url = "github:zigtools/zls/0.15.1";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.zig-overlay.follows = "zig-overlay";
     };
 
     pre-commit-hooks-nix = {
@@ -27,10 +26,10 @@
     nixpkgs,
     ...
   }: let
-    zig-stable = "0.14.0";
+    zig-stable = "0.15.2";
 
     zig-overlay = _final: prev: let
-      orig = inputs.zig-overlay.packages.${prev.system};
+      orig = inputs.zig-overlay.packages.${prev.stdenv.hostPlatform.system};
     in {
       zigpkgs =
         orig
@@ -40,7 +39,7 @@
     };
 
     zls-overlay = final: prev: {
-      zls = inputs.zls.packages.${prev.system}.zls.overrideAttrs (_oldAttrs: {
+      zls = inputs.zls.packages.${prev.stdenv.hostPlatform.system}.zls.overrideAttrs (_oldAttrs: {
         nativeBuildInputs = [final.zigpkgs.stable];
       });
     };
@@ -62,7 +61,7 @@
         zigpkgs = zig-overlay;
         zls = zls-overlay;
         pgzx_scripts = _final: prev: {
-          pgzx_scripts = self.packages.${prev.system}.pgzx_scripts;
+          pgzx_scripts = self.packages.${prev.stdenv.hostPlatform.system}.pgzx_scripts;
         };
       };
 
