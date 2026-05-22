@@ -13,7 +13,6 @@
     zls = {
       url = "github:zigtools/zls";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.zig-overlay.follows = "zig-overlay";
     };
 
     pre-commit-hooks-nix = {
@@ -27,7 +26,7 @@
     nixpkgs,
     ...
   }: let
-    zig-stable = "0.14.0";
+    zig-stable = "0.15.2";
 
     zig-overlay = _final: prev: let
       orig = inputs.zig-overlay.packages.${prev.system};
