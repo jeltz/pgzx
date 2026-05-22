@@ -162,7 +162,7 @@ pub const api = struct {
 
                 //@compileLog("FmtMessage:", fmt, self.args);
 
-                const msg = std.fmt.allocPrintZ(memctx.allocator(), fmt, self.args) catch unreachable();
+                const msg = std.fmt.allocPrint(memctx.allocator(), fmt, self.args) catch unreachable();
                 _ = msgtype(msg.ptr);
             }
         };

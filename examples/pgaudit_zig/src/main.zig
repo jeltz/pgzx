@@ -131,7 +131,7 @@ fn executorStartHook(queryDesc: [*c]pg.QueryDesc, eflags: c_int) !void {
     );
 }
 
-fn pgaudit_zig_ExecutorStart_hook(queryDesc: [*c]pg.QueryDesc, eflags: c_int) callconv(.C) void {
+fn pgaudit_zig_ExecutorStart_hook(queryDesc: [*c]pg.QueryDesc, eflags: c_int) callconv(.c) void {
     std.log.debug("pgaudit_zig: ExecutorStart_hook\n", .{});
 
     executorStartHook(queryDesc, eflags) catch |err| {
@@ -184,7 +184,7 @@ fn executorCheckPermsHook(rangeTables: [*c]pg.List, rtePermInfos: [*c]pg.List, v
     return true;
 }
 
-pub fn pgaudit_zig_ExecutorCheckPerms_hook(rangeTables: [*c]pg.List, rtePermInfos: [*c]pg.List, violation: bool) callconv(.C) bool {
+pub fn pgaudit_zig_ExecutorCheckPerms_hook(rangeTables: [*c]pg.List, rtePermInfos: [*c]pg.List, violation: bool) callconv(.c) bool {
     std.log.debug("pgaudit_zig: ExecutorCheckPerms_hook\n", .{});
 
     return executorCheckPermsHook(rangeTables, rtePermInfos, violation) catch |err| {
@@ -194,7 +194,7 @@ pub fn pgaudit_zig_ExecutorCheckPerms_hook(rangeTables: [*c]pg.List, rtePermInfo
     };
 }
 
-fn pgaudit_zig_ExecutorFinish_hook(queryDesc: [*c]pg.QueryDesc) callconv(.C) void {
+fn pgaudit_zig_ExecutorFinish_hook(queryDesc: [*c]pg.QueryDesc) callconv(.c) void {
     std.log.debug("pgaudit_zig: ExecutorFinish_hook\n", .{});
 
     const queryContext = queryDesc.*.estate.*.es_query_cxt;

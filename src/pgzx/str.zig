@@ -11,7 +11,7 @@ pub fn format(
     comptime fmt: []const u8,
     args: anytype,
 ) !CString {
-    return try std.fmt.allocPrintZ(mem.PGCurrentContextAllocator, fmt, args);
+    return try std.fmt.allocPrint(mem.PGCurrentContextAllocator, fmt, args);
 }
 
 /// Return a formatted string or error.
@@ -23,5 +23,5 @@ pub fn formatMemCtx(
     args: anytype,
 ) !CString {
     const use_alloc = if (alloc) |a| a.allocator() else mem.PGCurrentContextAllocator;
-    return try std.fmt.allocPrintZ(use_alloc, fmt, args);
+    return try std.fmt.allocPrint(use_alloc, fmt, args);
 }

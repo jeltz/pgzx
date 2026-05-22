@@ -9,11 +9,11 @@ fn initNode() pg.slist_node {
 }
 
 pub fn SList(comptime T: type, comptime node_field: std.meta.FieldEnum(T)) type {
+    const meta = SListMeta(T, node_field);
+
     return struct {
         const Self = @This();
         const Iterator = SListIter(T, node_field);
-
-        usingnamespace SListMeta(T, node_field);
 
         head: pg.slist_head,
 
@@ -29,7 +29,7 @@ pub fn SList(comptime T: type, comptime node_field: std.meta.FieldEnum(T)) type 
 
         pub inline fn initFrom(init_node: *T) Self {
             var l = Self.init();
-            l.head.head.next = Self.nodePtr(init_node);
+            l.head.head.next = meta.nodePtr(init_node);
             return l;
         }
 
@@ -38,17 +38,17 @@ pub fn SList(comptime T: type, comptime node_field: std.meta.FieldEnum(T)) type 
         }
 
         pub inline fn pushHead(self: *Self, v: *T) void {
-            pg.slist_push_head(&self.head, Self.nodePtr(v));
+            pg.slist_push_head(&self.head, meta.nodePtr(v));
         }
 
         pub inline fn popHead(self: *Self) ?*T {
             const node_ptr = pg.slist_pop_head_node(&self.head);
-            return Self.optNodeParentPtr(node_ptr);
+            return meta.optNodeParentPtr(node_ptr);
         }
 
         pub inline fn headNode(self: Self) ?*T {
             const node_ptr = pg.slist_head_node(@constCast(&self.head));
-            return Self.optNodeParentPtr(node_ptr);
+            return meta.optNodeParentPtr(node_ptr);
         }
 
         pub fn tail(self: Self) ?Self {
@@ -84,9 +84,10 @@ pub fn SList(comptime T: type, comptime node_field: std.meta.FieldEnum(T)) type 
 }
 
 pub fn SListIter(comptime T: type, comptime node_field: std.meta.FieldEnum(T)) type {
+    const meta = SListMeta(T, node_field);
+
     return struct {
         const Self = @This();
-        usingnamespace SListMeta(T, node_field);
 
         iter: pg.slist_iter,
 
@@ -94,7 +95,7 @@ pub fn SListIter(comptime T: type, comptime node_field: std.meta.FieldEnum(T)) t
             if (self.iter.cur == null) return null;
             const node_ptr = self.iter.cur;
             self.iter.cur = node_ptr.*.next;
-            return if (node_ptr) |p| Self.nodeParentPtr(p) else null;
+            return if (node_ptr) |p| meta.nodeParentPtr(p) else null;
         }
     };
 }
