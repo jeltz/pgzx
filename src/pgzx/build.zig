@@ -10,7 +10,7 @@ std_build: *std.Build,
 paths: Paths,
 options: struct {
     target: std.Build.ResolvedTarget,
-    optimize: std.builtin.Mode,
+    optimize: std.builtin.OptimizeMode,
 },
 debug: DebugOptions,
 
@@ -195,7 +195,7 @@ pub const InstallExtension = struct {
 
         // shared library options
         target: ?std.Build.ResolvedTarget = null,
-        optimize: ?std.builtin.Mode = null,
+        optimize: ?std.builtin.OptimizeMode = null,
         single_threaded: bool = true,
         link_libc: bool = true,
         link_allow_shlib_undefined: bool = true,
@@ -241,7 +241,7 @@ pub const RunExec = struct {
         var r = b.std_build.allocator.create(RunExec) catch @panic("OOM");
         r.* = .{
             .owner = b,
-            .argv = std.ArrayList([]const u8).init(b.std_build.allocator),
+            .argv = std.ArrayList([]const u8){},
             .step = Step.init(.{
                 .id = base_id,
                 .name = name,
@@ -249,12 +249,12 @@ pub const RunExec = struct {
                 .makeFn = make,
             }),
         };
-        r.argv.appendSlice(argv) catch @panic("OOM");
+        r.argv.appendSlice(b.std_build.allocator, argv) catch @panic("OOM");
         return r;
     }
 
     fn addArg(r: *RunExec, arg: []const u8) void {
-        r.argv.append(arg) catch @panic("OOM");
+        r.argv.append(r.owner.std_build.allocator, arg) catch @panic("OOM");
     }
 
     fn addArgOption(r: *RunExec, option: []const u8, arg: []const u8) void {
@@ -298,7 +298,7 @@ pub const RunExec = struct {
 
 pub const InitOptions = struct {
     target: std.Build.ResolvedTarget,
-    optimize: std.builtin.Mode,
+    optimize: std.builtin.OptimizeMode,
     debug: DebugOptions = .{},
 };
 
@@ -378,22 +378,28 @@ pub fn addExtensionLib(b: *Build, options: ExtensionLibOptions) *Step.Compile {
     const root_dir = options.root_dir orelse
         b.std_build.pathJoin(&[_][]const u8{ "src/", options.name });
 
-    const lib = b.std_build.addSharedLibrary(.{
+    const lib_module = b.std_build.createModule(.{
+        .root_source_file = b.resolveLazyPath(root_dir, options.root_source_file, "main.zig"),
+        .target = b.options.target,
+        .optimize = b.options.optimize,
+        .link_libc = options.link_libc,
+    });
+    lib_module.addIncludePath(.{
+        .cwd_relative = b.getIncludeServerDir(),
+    });
+
+    const lib = b.std_build.addLibrary(.{
         .name = options.name,
         .version = .{
             .major = options.version.major,
             .minor = options.version.minor,
             .patch = 0,
         },
-        .root_source_file = b.resolveLazyPath(root_dir, options.root_source_file, "main.zig"),
-        .target = b.options.target,
-        .optimize = b.options.optimize,
-        .link_libc = options.link_libc,
-    });
-    lib.addIncludePath(.{
-        .cwd_relative = b.getIncludeServerDir(),
+        .root_module = lib_module,
+
     });
     lib.linker_allow_shlib_undefined = true;
+
     return lib;
 }
 
@@ -619,7 +625,7 @@ pub fn runPGConfig(b: *Build, question: []const u8) []const u8 {
     };
 
     if (b.debug.pg_config) {
-        std.debug.print("Running pg_config: {s}\n", .{argv});
+        std.debug.print("Running pg_config: {any}\n", .{argv});
     }
 
     var child = std.process.Child.init(&argv, allocator);
