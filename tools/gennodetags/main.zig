@@ -1,10 +1,6 @@
 const std = @import("std");
 
-const pg = @cImport({
-    @cInclude("c.h");
-    @cInclude("utils/palloc.h");
-    @cInclude("nodes/nodes.h");
-});
+const pg = @import("gennodetags_nodes");
 
 const tagsOnly = std.StaticStringMap(void).initComptime([_]struct { []const u8 }{
     // Internal markers

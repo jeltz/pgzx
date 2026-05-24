@@ -24,37 +24,56 @@ pub fn build(b: *std.Build) void {
 
     // pgzx_pgsys module: C bindings to Postgres
     const pgzx_pgsys = blk: {
-        const module = b.addModule("pgzx_pgsys", .{
-            .root_source_file = b.path("./src/pgzx/c.zig"),
+        const translate = b.addTranslateC(.{
+            .root_source_file = b.path("./src/pgzx/c/pgzx_pgsys.c"),
             .target = target,
             .optimize = optimize,
         });
 
         // Internal C headers
-        module.addIncludePath(b.path("./src/pgzx/c/include/"));
+        translate.addIncludePath(b.path("./src/pgzx/c/include/"));
 
         // Postgres Headers
-        module.addIncludePath(.{
+        translate.addIncludePath(.{
             .cwd_relative = pgbuild.getIncludeServerDir(),
         });
-        module.addIncludePath(.{
+        translate.addIncludePath(.{
             .cwd_relative = pgbuild.getIncludeDir(),
         });
+
+        const module = translate.addModule("pgzx_pgsys");
+
         module.addLibraryPath(.{
             .cwd_relative = pgbuild.getLibDir(),
         });
 
         // libpq support
-        module.addCSourceFiles(.{
-            .files = &[_][]const u8{
-                "./src/pgzx/c/libpqsrv.c",
-            },
-            .flags = &[_][]const u8{
-                "-I", pgbuild.getIncludeDir(),
-                "-I", pgbuild.getIncludeServerDir(),
-            },
-        });
         module.linkSystemLibrary("pq", .{});
+
+        break :blk module;
+    };
+
+    // gennodetags_nodes module: C bindings to PostgreSQL's node tags
+    const gennodetags_nodes = blk: {
+        const translate = b.addTranslateC(.{
+            .root_source_file = b.path("./tools/gennodetags/nodes.c"),
+            .target = target,
+            .optimize = optimize,
+        });
+
+        // Postgres Headers
+        translate.addIncludePath(.{
+            .cwd_relative = pgbuild.getIncludeServerDir(),
+        });
+        translate.addIncludePath(.{
+            .cwd_relative = pgbuild.getIncludeDir(),
+        });
+
+        const module = translate.addModule("gennodetags_nodes");
+
+        module.addLibraryPath(.{
+            .cwd_relative = pgbuild.getLibDir(),
+        });
 
         break :blk module;
     };
@@ -70,6 +89,7 @@ pub fn build(b: *std.Build) void {
         });
         tool.root_module.addIncludePath(.{ .cwd_relative = pgbuild.getIncludeServerDir() });
         tool.root_module.addIncludePath(.{ .cwd_relative = pgbuild.getIncludeDir() });
+        tool.root_module.addImport("gennodetags_nodes", gennodetags_nodes);
 
         const tool_step = b.addRunArtifact(tool);
         break :blk tool_step.addOutputFileArg("nodetags.zig");
